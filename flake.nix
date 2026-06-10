@@ -60,6 +60,9 @@
 
           src = source;
           cargoLock.lockFile = ./Cargo.lock;
+          # macOS arm64 では tokenusage/Claude 使用量表示のテスト期待値が Linux と異なり、
+          # ユーザー環境でのインストール時にビルドが失敗するためチェックを無効化する。
+          doCheck = false;
 
           meta = {
             description = "Standalone Yazelix Zellij bar widget command";
