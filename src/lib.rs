@@ -2950,14 +2950,14 @@ case " $* " in
   *" --official-limits "*)
   printf '%s\n' '{"official_codex":{"primary_used_percent":51.0,"secondary_used_percent":20.0,"primary_resets_at":8200,"primary_window_mins":300,"secondary_resets_at":260200,"secondary_window_mins":10080}}'
   ;;
-  *)
-if [ "$1" = "blocks" ]; then
-  printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":138456789}}]}'
-elif [ "$1" = "weekly" ]; then
+  *" weekly "*)
   printf '%s\n' '{"weekly":[{"totals":{"total_tokens":1337000000}}]}'
-else
+  ;;
+  *" blocks "*)
+  printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":138456789}}]}'
+  ;;
+  *)
   exit 1
-fi
   ;;
 esac
 "#,
@@ -2970,7 +2970,7 @@ esac
             now_unix_seconds: 1_000,
             max_age_seconds: 600,
             error_backoff_seconds: 1_800,
-            timeout: std::time::Duration::from_secs(5),
+            timeout: std::time::Duration::from_secs(30),
             display: AgentUsageDisplay::Both,
             periods: &[AgentUsagePeriod::FiveHour, AgentUsagePeriod::Weekly],
         })
@@ -3068,14 +3068,14 @@ case " $* " in
   *" --official-limits "*)
   printf '%s\n' '{"official_claude":{"primary_used_percent":51.0,"secondary_used_percent":20.0}}'
   ;;
-  *)
-if [ "$1" = "blocks" ]; then
-  printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":15456373}}]}'
-elif [ "$1" = "weekly" ]; then
+  *" weekly "*)
   printf '%s\n' '{"weekly":[{"totals":{"total_tokens":66610005}}]}'
-else
+  ;;
+  *" blocks "*)
+  printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":15456373}}]}'
+  ;;
+  *)
   exit 1
-fi
   ;;
 esac
 "#,
@@ -3088,7 +3088,7 @@ esac
             now_unix_seconds: 1_000,
             max_age_seconds: 600,
             error_backoff_seconds: 1_800,
-            timeout: std::time::Duration::from_secs(5),
+            timeout: std::time::Duration::from_secs(30),
             display: AgentUsageDisplay::Both,
             periods: &[AgentUsagePeriod::FiveHour, AgentUsagePeriod::Weekly],
         })
