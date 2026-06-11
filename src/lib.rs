@@ -2573,6 +2573,39 @@ mod tests {
         }
     }
 
+    #[test]
+    fn tokenusage_active_block_parser_reads_active_totals_total_tokens() {
+        let value = serde_json::json!({
+            "blocks": [
+                {"isActive": false, "totals": {"total_tokens": 1u64}},
+                {"isActive": true, "totals": {"total_tokens": 15_456_373u64}}
+            ]
+        });
+
+        assert_eq!(
+            tokenusage_active_block_tokens_from_json(&value),
+            Some(15_456_373)
+        );
+        assert_eq!(format_agent_usage_token_count(15_456_373), "15.5M");
+    }
+
+    #[test]
+    fn tokenusage_active_block_parser_supports_common_token_key_variants() {
+        let snake_case = serde_json::json!({
+            "blocks": [{"is_active": true, "totals": {"total_tokens": 42u64}}]
+        });
+        let camel_case = serde_json::json!({
+            "blocks": [{"isActive": true, "totals": {"totalTokens": 43u64}}]
+        });
+        let top_level = serde_json::json!({
+            "blocks": [{"isActive": true, "totalTokens": 44u64}]
+        });
+
+        assert_eq!(tokenusage_active_block_tokens_from_json(&snake_case), Some(42));
+        assert_eq!(tokenusage_active_block_tokens_from_json(&camel_case), Some(43));
+        assert_eq!(tokenusage_active_block_tokens_from_json(&top_level), Some(44));
+    }
+
     // Defends: the bar registry preserves the existing zjstatus widgets and exact segment syntax.
     // Strength: defect=2 behavior=2 resilience=1 cost=1 uniqueness=2 total=8/10
     #[test]
@@ -2913,15 +2946,20 @@ MemAvailable:   250000 kB
         write_tokenusage_provider_script(
             &bin_dir,
             r#"#!/usr/bin/env sh
-if [ "$1" = "blocks" ] && [ "$4" = "--official-limits" ]; then
+case " $* " in
+  *" --official-limits "*)
   printf '%s\n' '{"official_codex":{"primary_used_percent":51.0,"secondary_used_percent":20.0,"primary_resets_at":8200,"primary_window_mins":300,"secondary_resets_at":260200,"secondary_window_mins":10080}}'
-elif [ "$1" = "blocks" ]; then
+  ;;
+  *)
+if [ "$1" = "blocks" ]; then
   printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":138456789}}]}'
 elif [ "$1" = "weekly" ]; then
   printf '%s\n' '{"weekly":[{"totals":{"total_tokens":1337000000}}]}'
 else
   exit 1
 fi
+  ;;
+esac
 "#,
         );
         let cache_path = temp.join("agent_usage").join("codex_usage_cache_v2.json");
@@ -2932,7 +2970,7 @@ fi
             now_unix_seconds: 1_000,
             max_age_seconds: 600,
             error_backoff_seconds: 1_800,
-            timeout: std::time::Duration::from_secs(1),
+            timeout: std::time::Duration::from_secs(5),
             display: AgentUsageDisplay::Both,
             periods: &[AgentUsagePeriod::FiveHour, AgentUsagePeriod::Weekly],
         })
@@ -3026,15 +3064,20 @@ fi
         write_tokenusage_provider_script(
             &bin_dir,
             r#"#!/usr/bin/env sh
-if [ "$1" = "blocks" ] && [ "$4" = "--official-limits" ]; then
+case " $* " in
+  *" --official-limits "*)
   printf '%s\n' '{"official_claude":{"primary_used_percent":51.0,"secondary_used_percent":20.0}}'
-elif [ "$1" = "blocks" ]; then
+  ;;
+  *)
+if [ "$1" = "blocks" ]; then
   printf '%s\n' '{"blocks":[{"isActive":true,"totals":{"total_tokens":15456373}}]}'
 elif [ "$1" = "weekly" ]; then
   printf '%s\n' '{"weekly":[{"totals":{"total_tokens":66610005}}]}'
 else
   exit 1
 fi
+  ;;
+esac
 "#,
         );
         let cache_path = temp.join("agent_usage").join("claude_usage_cache_v1.json");
@@ -3045,7 +3088,7 @@ fi
             now_unix_seconds: 1_000,
             max_age_seconds: 600,
             error_backoff_seconds: 1_800,
-            timeout: std::time::Duration::from_secs(1),
+            timeout: std::time::Duration::from_secs(5),
             display: AgentUsageDisplay::Both,
             periods: &[AgentUsagePeriod::FiveHour, AgentUsagePeriod::Weekly],
         })
